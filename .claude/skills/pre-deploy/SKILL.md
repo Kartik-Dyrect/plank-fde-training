@@ -42,12 +42,12 @@ values. Exit code 1 means at least one is missing: **FAIL**, and list them.
 
 Print a table, then a one-line verdict:
 
-| Check | Result | Details |
-| ----- | ------ | ------- |
-| Type check | PASS/FAIL | error count |
-| Tests | PASS/FAIL/SKIP | counts or reason |
-| console.log | PASS/FAIL | locations |
-| Env vars | PASS/FAIL | missing names |
+| Check       | Result         | Details          |
+| ----------- | -------------- | ---------------- |
+| Type check  | PASS/FAIL      | error count      |
+| Tests       | PASS/FAIL/SKIP | counts or reason |
+| console.log | PASS/FAIL      | locations        |
+| Env vars    | PASS/FAIL      | missing names    |
 
 Verdict: **PASS** only if no check is FAIL. A SKIP does not fail the run, but
 call it out. Otherwise **FAIL: do not deploy**.
