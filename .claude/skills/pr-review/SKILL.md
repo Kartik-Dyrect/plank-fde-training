@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Review a pull request with three parallel subagents (correctness, conventions, security) and merge their findings into one report. Use when asked to review a PR.
+description: Review a pull request with three parallel subagents (bug hunter, performance reviewer, security reviewer) and merge their findings into one review. Use when asked to review a PR. Named pr-review because /review is Claude Code's own bundled review.
 argument-hint: <pr-number>
 disable-model-invocation: true
 allowed-tools: Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh pr checks:*)
@@ -19,7 +19,7 @@ file list rather than pasting it all.
 ## 2. Run the trio in parallel
 
 In **one message**, spawn three subagents with the Agent tool, one each of
-`review-correctness`, `review-conventions` and `review-security`. Give each the
+`bug-hunter`, `performance-reviewer` and `security-reviewer`. Give each the
 PR number, title, one-line summary of intent and the list of changed files.
 Do not tell them what you think is wrong, and do not share one agent's output
 with another: independent reads are the point.
@@ -30,7 +30,8 @@ with another: independent reads are the point.
 - Verify each remaining finding yourself by reading the cited lines. Mark
   ones you could not confirm as _unverified_ rather than deleting them.
 - Merge duplicates, noting which reviewers raised it (agreement across lenses
-  raises confidence).
+  raises confidence). Keep each finding under its lens heading so the author
+  can tell a bug from a performance or security concern.
 - Rank: high, medium, low.
 
 ## 4. Report
