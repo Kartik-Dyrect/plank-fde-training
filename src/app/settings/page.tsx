@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { env } from "@/lib/env";
 
-export const metadata: Metadata = { title: "Settings · WorkBot" };
+export const metadata: Metadata = { title: "Settings" };
 
 const rows = [
   { label: "Environment", value: env.deploymentEnv },
