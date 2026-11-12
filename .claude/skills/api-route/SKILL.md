@@ -1,67 +1,62 @@
 ---
 name: api-route
-description: Create a Next.js App Router API route handler with Zod validation, correct HTTP error statuses and a types file. Use when asked to add an API endpoint.
-argument-hint: <route-name>
+description: Create a Next.js API route in src/app/api/<name>/ with Zod schemas, one handler per HTTP method, and tests. Use when asked to add an API endpoint.
+argument-hint: <name> [methods]
 disable-model-invocation: true
 ---
 
-Create an API route named `$ARGUMENTS`.
+Arguments: `$ARGUMENTS`. The first word is the route name (kebab-case). Any
+further words are HTTP methods (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`); with
+none given, use `GET`.
 
-## 1. Read first
+## Read first
 
-- Read `AGENTS.md`. This Next.js version has breaking changes: read
-  `node_modules/next/dist/docs/01-app/01-getting-started/15-route-handlers.md`
-  and `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md`
-  before writing code.
-- Cache Components is enabled, so **do not** `export const dynamic = ...`; the
-  build rejects it. A handler that must read request-time data calls
-  `await connection()` from `next/server`. See `src/app/api/health/route.ts`.
-- Only `src/lib/env.ts` may touch `process.env`. Import from `@/lib/env`.
+- `AGENTS.md`, and `src/app/api/health/route.ts` as the existing route to match.
+- This Next.js version has breaking changes. Cache Components is on, so do
+  **not** `export const dynamic`. A handler that reads request-time data
+  awaits `connection()` from `next/server`, as the health route does.
+- Only `src/lib/env.ts` may read `process.env`.
 
-## 2. Files
+## Files: create exactly these three in `src/app/api/<name>/`
 
-For a name like `invoices` (kebab-case it; nested segments are fine):
+Never overwrite existing files; stop and say so.
 
-- `src/app/api/<name>/types.ts`: the types file.
-- `src/app/api/<name>/route.ts`: the handler.
+### `types.ts`
 
-Do not overwrite existing files; stop and say so instead.
-
-## 3. Types file
-
-Zod is the source of truth, and the TypeScript types are inferred from it:
+Zod is a library that validates data and infers its TypeScript type. Define a
+request schema and a response schema, and export the inferred types:
 
 ```ts
 import { z } from "zod";
 
-export const create<Name>Request = z.object({ /* fields */ });
-export type Create<Name>Request = z.infer<typeof create<Name>Request>;
+export const <name>Request = z.object({ /* fields */ });
+export type <Name>Request = z.infer<typeof <name>Request>;
 
-export type <Name>Response = { /* what the client receives */ };
-export type ErrorResponse = { error: string; details?: unknown };
+export const <name>Response = z.object({ /* fields */ });
+export type <Name>Response = z.infer<typeof <name>Response>;
 ```
 
-If `zod` is not in `package.json`, run `npm install zod` and say so in the
-summary.
+### `route.ts`
 
-## 4. Handler
+- Export one function per method: `export async function POST(request: Request)`.
+- Methods with a body (`POST`, `PUT`, `PATCH`) read `request.json()` inside
+  `try/catch` and validate with `<name>Request.safeParse`. On a malformed body
+  or a failed parse, answer **400** with
+  `Response.json({ error: "Invalid request", issues: result.error.issues }, { status: 400 })`.
+- `GET` and `DELETE` take no body; validate query parameters the same way if
+  the route uses any.
+- On success return `Response.json(<validated response>)` (201 for `POST`).
+- Keep the logic a minimal, honest stub and say it is a stub in the report.
 
-- Export one function per HTTP method the route supports (`GET`, `POST`, ...).
-- Parse the body with `request.json()` inside `try/catch`; malformed JSON is a 400. Validate with `schema.safeParse`; on failure return 400 with
-  `{ error: "Invalid request", details: result.error.flatten() }`.
-- Status codes:
-  - **400** invalid or malformed input
-  - **404** the resource the request refers to does not exist
-  - **409** the request conflicts with current state (duplicate, stale update)
-  - **201** for successful creation, **200** otherwise
-  - **500** for anything unexpected: catch it, log server-side, return a
-    generic `{ error: "Internal server error" }` and never leak the message.
-- Use `Response.json(body, { status })` with the response types from the types
-  file. Give the data layer a clear seam (a function in `src/lib/`) and return
-  404 or 409 from its typed result rather than string-matching errors. Until
-  a real data layer exists, stub it and say it is a stub.
+### `route.test.ts`
 
-## 5. Verify and report
+Import the handlers directly and call them with `new Request(...)`:
 
-- Run `npm run typecheck`, `npm run lint` and `npm run build`.
-- Report the files, the status codes the route can return, and any stub left.
+- one test per exported method, asserting status and body;
+- one more test sending invalid input, asserting status 400 and that `issues`
+  is present.
+
+## Finish
+
+Run `npx vitest run src/app/api/<name>` and `npm run typecheck`. Report the
+three files, the methods, and any stub left in place.

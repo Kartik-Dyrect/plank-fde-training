@@ -1,53 +1,34 @@
 ---
 name: pre-deploy
-description: Pre-deployment checklist. Runs the type check and test suite, searches source for console.log, verifies the env vars named in .env.example are set, and reports PASS or FAIL. Use before deploying or merging to main.
+description: Pre-deployment checks. Runs the type check, the tests, a console.log search and a missing-env-var check, then reports a pass/fail table and a verdict.
 disable-model-invocation: true
+allowed-tools: Bash(npm run typecheck:*), Bash(npm test:*), Bash(grep:*), Bash(node:*)
 ---
 
-Run these four checks from the repo root. Run all of them even if one fails,
-then print one summary. Do not fix anything; report only.
+## Type check
 
-## 1. Type check
+!`npm run typecheck 2>&1 | tail -n 25; echo "exit code: ${PIPESTATUS[0]}"`
 
-Run `npm run typecheck`. It runs `next typegen && tsc --noEmit`; the typegen
-step is needed because `LayoutProps` is a generated global and a clean
-checkout fails `tsc` without it.
+## Tests
 
-## 2. Tests
+!`npm test 2>&1 | tail -n 25; echo "exit code: ${PIPESTATUS[0]}"`
 
-Read the `scripts` in `package.json`. If a `test` script exists, run
-`npm test`. If there is none, the result is **SKIP (no test runner
-configured)**, which is a warning, not a pass. Say so plainly.
+## console.log under src/
 
-## 3. console.log
+!`grep -rnE "console\.log" src; echo "exit code: $? (1 means no matches)"`
 
-Run:
+## Missing environment variables
 
-```bash
-grep -rnE "console\.log\s*\(" src --include=*.ts --include=*.tsx --include=*.js --include=*.jsx
-```
+!`node -e 'try{process.loadEnvFile(".env.local")}catch{};const n=require("fs").readFileSync(".env.example","utf8").split("\n").map(l=>l.match(/^([A-Z_][A-Z0-9_]*)=/)?.[1]).filter(Boolean);const m=n.filter(k=>!process.env[k]);console.log(m.length?"missing: "+m.join(", "):"none missing ("+n.length+" checked)")'`
 
-Any match is a **FAIL**; list each as `file:line`. `console.error` and
-`console.warn` are fine. Ignore matches inside comments only if you read the
-line and it is clearly a comment.
+## Your task
 
-## 4. Environment variables
+The four results above already ran. Do not run anything else and do not fix
+anything. Reply with exactly:
 
-Run `bash .claude/skills/pre-deploy/scripts/check-env.sh`. It reads the
-variable names from the uncommented lines of `.env.example` and checks each is
-set in the shell environment or in `.env.local`. It prints names only, never
-values. Exit code 1 means at least one is missing: **FAIL**, and list them.
+1. A table with columns Check, Result (PASS or FAIL), Detail, covering type
+   check, tests, console.log, env vars. Type check and tests pass on exit code 0. console.log passes only when grep found nothing. Env vars pass only when
+   none are missing.
+2. One line: **Verdict: PASS** or **Verdict: FAIL**. FAIL if any check fails.
 
-## Summary
-
-Print a table, then a one-line verdict:
-
-| Check       | Result         | Details          |
-| ----------- | -------------- | ---------------- |
-| Type check  | PASS/FAIL      | error count      |
-| Tests       | PASS/FAIL/SKIP | counts or reason |
-| console.log | PASS/FAIL      | locations        |
-| Env vars    | PASS/FAIL      | missing names    |
-
-Verdict: **PASS** only if no check is FAIL. A SKIP does not fail the run, but
-call it out. Otherwise **FAIL: do not deploy**.
+Nothing else.
