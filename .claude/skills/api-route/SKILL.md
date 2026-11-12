@@ -47,8 +47,7 @@ summary.
 ## 4. Handler
 
 - Export one function per HTTP method the route supports (`GET`, `POST`, ...).
-- Parse the body with `request.json()` inside `try/catch`; malformed JSON is a
-  400. Validate with `schema.safeParse`; on failure return 400 with
+- Parse the body with `request.json()` inside `try/catch`; malformed JSON is a 400. Validate with `schema.safeParse`; on failure return 400 with
   `{ error: "Invalid request", details: result.error.flatten() }`.
 - Status codes:
   - **400** invalid or malformed input
